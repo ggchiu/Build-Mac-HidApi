@@ -1,0 +1,34 @@
+name: Build Mac dylib (Universal)
+
+# 設定觸發條件：允許我們手動點擊按鈕執行
+on:
+  workflow_dispatch: 
+
+jobs:
+  build:
+    # 指定使用 GitHub 雲端的最新版 macOS 伺服器
+    runs-on: macos-latest
+
+    steps:
+    - name: 1. 下載 hidapi 官方原始碼
+      run: git clone https://github.com/libusb/hidapi.git
+
+    - name: 2. 安裝 CMake 工具
+      run: brew install cmake
+
+    - name: 3. 建立並執行 CMake 編譯 (指定 Intel 與 ARM 雙架構)
+      run: |
+        cd hidapi
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+        cmake --build .
+
+    - name: 4. 確認檔案是否成功包含雙架構
+      run: file hidapi/build/mac/libhidapi.dylib
+
+    - name: 5. 將編譯好的 .dylib 輸出成下載檔 (Artifact)
+      uses: actions/upload-artifact@v4
+      with:
+        name: libhidapi-mac-universal
+        path: hidapi/build/mac/libhidapi.dylib
