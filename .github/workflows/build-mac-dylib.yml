@@ -1,12 +1,10 @@
 name: Build Mac dylib (Universal)
 
-# 設定觸發條件：允許我們手動點擊按鈕執行
 on:
   workflow_dispatch: 
 
 jobs:
   build:
-    # 指定使用 GitHub 雲端的最新版 macOS 伺服器
     runs-on: macos-latest
 
     steps:
@@ -24,11 +22,20 @@ jobs:
         cmake .. -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
         cmake --build .
 
-    - name: 4. 確認檔案是否成功包含雙架構
-      run: file hidapi/build/mac/libhidapi.dylib
+    - name: 4. 尋找編譯好的檔案並確認架構
+      run: |
+        # 讓系統自己找出 .dylib 的真實路徑
+        DYLIB_PATH=$(find hidapi/build -name "libhidapi.dylib" | head -n 1)
+        echo "成功找到檔案：$DYLIB_PATH"
+        
+        # 確認是否包含雙架構
+        file "$DYLIB_PATH"
+        
+        # 把檔案複製到最外層目錄，方便下一步打包
+        cp "$DYLIB_PATH" ./libhidapi.dylib
 
     - name: 5. 將編譯好的 .dylib 輸出成下載檔 (Artifact)
       uses: actions/upload-artifact@v4
       with:
         name: libhidapi-mac-universal
-        path: hidapi/build/mac/libhidapi.dylib
+        path: ./libhidapi.dylib
